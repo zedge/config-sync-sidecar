@@ -1,7 +1,5 @@
-#
-# This deployment should not be used in production, it's only
-# meant for testing.
-#
+# This file is only meant for testing, in production you will run as a sidecar!
+
 apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
@@ -38,4 +36,3 @@ spec:
       volumes:
         - name: config-dir
           emptyDir: {}
-
