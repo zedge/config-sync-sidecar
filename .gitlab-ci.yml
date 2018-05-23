@@ -1,0 +1,97 @@
+variables:
+  GO_PROJECT_PATH: /go/src/gitlab.com/${CI_PROJECT_PATH}
+  CGO_ENABLED: "0"
+  KUBEBUILDER_VERSION: "1.0.7"
+
+stages:
+  - build
+  - package
+  - release
+
+go-build:
+  image: golang:1.11
+  stage: build
+  tags:
+    - docker
+  before_script:
+    - mkdir -p $(dirname ${GO_PROJECT_PATH})
+    - ln -s ${CI_PROJECT_DIR} ${GO_PROJECT_PATH}
+    - cd ${GO_PROJECT_PATH}
+    - mkdir -p /usr/local/kubebuilder
+    - curl -sL https://github.com/kubernetes-sigs/kubebuilder/releases/download/v${KUBEBUILDER_VERSION}/kubebuilder_${KUBEBUILDER_VERSION}_linux_amd64.tar.gz | tar -C /usr/local/kubebuilder --strip-components 1 -xvzf -;
+    - export PATH=/usr/local/kubebuilder/bin:$PATH
+  script:
+    - export KUBEBUILDER_CONTROLPLANE_START_TIMEOUT=60s
+    - make test configsync
+  coverage: /coverage:\s*(\d+(?:\.\d+)?%)/
+  artifacts:
+    paths:
+      - bin/configsync
+  except:
+    refs:
+      - tags
+
+code_quality:
+  stage: build
+  image: docker:stable
+  variables:
+    DOCKER_DRIVER: overlay2
+  allow_failure: true
+  services:
+    - docker:stable-dind
+  script:
+    - export SP_VERSION=$(echo "$CI_SERVER_VERSION" | sed 's/^\([0-9]*\)\.\([0-9]*\).*/\1-\2-stable/')
+    - docker run
+        --env SOURCE_CODE="$PWD"
+        --volume "$PWD":/code
+        --volume /var/run/docker.sock:/var/run/docker.sock
+        "registry.gitlab.com/gitlab-org/security-products/codequality:$SP_VERSION" /code
+  artifacts:
+    reports:
+      codequality: gl-code-quality-report.json
+  except:
+    refs:
+      - tags
+
+docker-build:
+  image: docker:stable
+  stage: package
+  services:
+    - docker:stable-dind
+  script:
+    - TAG=${CI_COMMIT_SHA:0:8}
+    - docker build --label org.label-schema.version=1.0
+                   --label org.label-schema.vcs-url=${CI_PROJECT_URL}
+                   --label org.label-schema.vcs-ref=${CI_COMMIT_SHA}
+                   --label org.label-schema.build-date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+                   -t ${CI_REGISTRY_IMAGE}:${TAG}
+                   .
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+    - docker push ${CI_REGISTRY_IMAGE}:${TAG}
+  only:
+    - master
+
+release-tag:
+  image: docker:stable
+  stage: release
+  services:
+    - docker:stable-dind
+  script:
+    - apk add --update git curl jq
+    # check if there's a pipeline running for our commit, and wait for it to finish if there is
+    - ./wait-for-master-pipeline.sh
+    - TAG=${CI_COMMIT_SHA:0:8} # must match the length used in the `docker-build` job!
+    - docker login -u gitlab-ci-token -p ${CI_JOB_TOKEN} ${CI_REGISTRY}
+    - docker pull ${CI_REGISTRY_IMAGE}:${TAG}
+    - docker login -u="${QUAY_IO_USERNAME}" -p "${QUAY_IO_PASSWORD}" quay.io
+    - PUBLIC_IMAGE=quay.io/zedge/${CI_PROJECT_NAME}
+    - docker tag ${CI_REGISTRY_IMAGE}:${TAG} ${PUBLIC_IMAGE}:${CI_COMMIT_TAG}
+    - docker tag ${CI_REGISTRY_IMAGE}:${TAG} ${PUBLIC_IMAGE}:latest
+    - docker push ${PUBLIC_IMAGE}:${CI_COMMIT_TAG}
+    - docker push ${PUBLIC_IMAGE}:latest
+  only:
+    - /^v(\d+\.)?(\d+\.)?(\d+)$/
+  except:
+    - branches
+    - triggers
+    - schedules

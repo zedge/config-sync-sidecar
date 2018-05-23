@@ -1,0 +1,38 @@
+# This file is only meant for testing, in production you will run as a sidecar!
+
+apiVersion: apps/v1beta2
+kind: Deployment
+metadata:
+  name: config-sidecar-test
+  labels:
+    app: config-sidecar-test
+spec:
+  selector:
+    matchLabels:
+      app: config-sidecar-test
+  template:
+    metadata:
+      labels:
+        app: config-sidecar-test
+    spec:
+      containers:
+        - image: us.gcr.io/zedge-dev/config-sync-sidecar
+          imagePullPolicy: Always
+          name: sidecar
+          env:
+            - name: SERVICE_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIG_MAP_NAME
+              value: my-configmap
+            - name: LOG_LEVEL
+              value: DEBUG
+            - name: OUTPUT_DIR
+              value: /srv/services
+          volumeMounts:
+            - name: config-dir
+              mountPath: /srv/services
+      volumes:
+        - name: config-dir
+          emptyDir: {}

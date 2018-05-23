@@ -1,0 +1,34 @@
+---
+version: "2"
+plugins:
+  structure:
+    enabled: false
+  duplication:
+    enabled: false
+  gofmt:
+    enabled: true
+  golint:
+    enabled: true
+    checks:
+      GoLint/Comments/DocComments:
+        enabled: true
+      GoLint/Naming/MixedCaps:
+        enabled: true
+      GoLint/Naming/PackageNames:
+        enabled: true
+  govet:
+    enabled: true
+  gocyclo:
+    enabled: true
+    config:
+      over: 9
+    exclude_patterns:
+    - vendor/
+  fixme:
+    enabled: true
+  shellcheck:
+    enabled: false
+exclude_patterns:
+- bin/
+- vendor/
+- manifests/
