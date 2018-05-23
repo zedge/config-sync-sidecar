@@ -1,0 +1,37 @@
+#
+# This deployment should not be used in production, it's only
+# meant for testing.
+#
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: config-sidecar
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: airflow-sidecar
+    spec:
+      containers:
+        - image: us.gcr.io/zedge-dev/airflow-config-sidecar
+          imagePullPolicy: Never
+          name: sidecar
+          env:
+            - name: SERVICE_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: CONFIG_MAP_NAME
+              value: airflow-dags-master
+            - name: LOG_LEVEL
+              value: DEBUG
+            - name: OUTPUT_DIR
+              value: /config
+          volumeMounts:
+            - name: config-dir
+              mountPath: /config
+      volumes:
+        - name: config-dir
+          emptyDir:
