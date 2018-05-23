@@ -2,21 +2,24 @@
 # This deployment should not be used in production, it's only
 # meant for testing.
 #
-apiVersion: extensions/v1beta1
+apiVersion: apps/v1beta2
 kind: Deployment
 metadata:
-  name: config-sidecar
+  name: config-sidecar-test
+  labels:
+    app: config-sidecar-test
 spec:
-  strategy:
-    type: Recreate
+  selector:
+    matchLabels:
+      app: config-sidecar-test
   template:
     metadata:
       labels:
-        app: airflow-sidecar
+        app: config-sidecar-test
     spec:
       containers:
-        - image: us.gcr.io/zedge-dev/airflow-config-sidecar
-          imagePullPolicy: Never
+        - image: us.gcr.io/zedge-dev/config-sync-sidecar
+          imagePullPolicy: Always
           name: sidecar
           env:
             - name: SERVICE_NAMESPACE
@@ -24,14 +27,15 @@ spec:
                 fieldRef:
                   fieldPath: metadata.namespace
             - name: CONFIG_MAP_NAME
-              value: airflow-dags-master
+              value: zedge-services
             - name: LOG_LEVEL
               value: DEBUG
             - name: OUTPUT_DIR
-              value: /config
+              value: /srv/services
           volumeMounts:
             - name: config-dir
-              mountPath: /config
+              mountPath: /srv/services
       volumes:
         - name: config-dir
-          emptyDir:
+          emptyDir: {}
+
