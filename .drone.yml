@@ -1,0 +1,13 @@
+pipeline:
+  publish-artifact:
+    image: plugins/gcr
+    volumes: [ "/var/run/docker.sock:/var/run/docker.sock" ]
+    registry: "us.gcr.io"
+    repo: "us.gcr.io/zedge-dev/config-sync-sidecar"
+    secrets: ["gcr_json_key"]
+    tags:
+      - ${DRONE_COMMIT_SHA:0:12}
+      - latest
+    when:
+      branch: master
+
