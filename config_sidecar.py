@@ -1,9 +1,12 @@
 import logging
 import glob
 import os
+import sys
 import tempfile
 import kubernetes
 from kubernetes.client.models.v1_config_map import V1ConfigMap
+
+from stackdriver import StackdriverJsonFormatter
 
 
 class SidecarConfig:
@@ -80,6 +83,13 @@ def main(config, logger):
 if __name__ == '__main__':
     my_config = SidecarConfig(os.environ)
     my_log_level = logging.getLevelName(my_config.log_level)
-    logging.basicConfig(format='%(asctime)s %(levelname)s %(message)s', level=my_log_level)
+
+    handler = logging.StreamHandler(sys.stdout)
+    formatter = StackdriverJsonFormatter()
+    handler.setFormatter(formatter)
+
     my_logger = logging.getLogger(os.path.basename(__file__))
+    my_logger.addHandler(handler)
+    my_logger.setLevel(my_log_level)
+
     main(my_config, my_logger)
