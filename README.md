@@ -12,7 +12,7 @@ sidecar in your pods with this service.
 
 This service is in user for syncing [experiment config](https://gitlab.com/zedge/data-warehouse/experiment-controller) from kubernetes to the [php frontend](https://github.com/zedge/frontend). Set up the service account in kubernetes by applying the manifest:
 ```bash
-kubectl apply -f manifest/config-sidecar-service-account.yaml
+kubectl apply -f manifests/config-sidecar-service-account.yaml
 ```
 
 ## Example
