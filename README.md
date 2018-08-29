@@ -1,6 +1,4 @@
----
-title: Kubernetes Config Sync Sidecar
----
+# Kubernetes Config Sync Sidecar
 
 This is a service for keeping a local directory in sync with the contents of a config map.
 It watches a given config map for changes, and immediately rsyncs the contents of it to
@@ -9,6 +7,15 @@ a given directory.
 Normally, you can just use config maps directly through volume mounts,
 but if this does not work for you for some reason, you can add a
 sidecar in your pods with this service.
+
+## Use case
+
+This service is in user for syncing [experiment config](https://gitlab.com/zedge/data-warehouse/experiment-controller) 
+from kubernetes to the [php frontend](https://github.com/zedge/frontend). Set up the service account in kubernetes by 
+applying the manifest:
+```bash
+kubectl apply -f manifests/service-account.yaml
+```
 
 ## Example
 
