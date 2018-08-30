@@ -115,3 +115,53 @@ subjects:
     name: my-service
 
 ```
+
+## How to access kubernetes API server outside of a kubernetes cluster
+
+**Note that a KUBECONFIG is essentially a secret!**
+
+
+Find the secret for the service account
+
+```bash
+kubectl get secret | grep <service account name...>
+kubectl get secret config-sync-sidecar-token-4mr94 -o json | jq -r '.data["ca.crt"]' | base64 -d > config-api-server.crt
+```
+
+Find API server URL with next command, look for https://...
+
+```bash
+kubectl config view | less
+
+# (test-cluster is currently https://35.192.74.79 )
+```
+
+Set  cluster config with API endpoint to kubernetes master and CA to verify talking with correct API server
+
+```bash
+KUBECONFIG=/tmp/fooo kubectl config set-cluster --server https://35.192.74.79 --certificate-authority=config-api-server.crt --embed-certs=true test-cluster
+```
+
+Set credentials for user config-sync
+
+```bash
+KUBECONFIG=/tmp/fooo kubectl config set-credentials config-sync --token $(kubectl get secret config-sync-sidecar-token-4mr94 -o json | jq -r '.data["token"]' | base64 -d)
+```
+
+Name a context, ie env:test with the above configuration
+
+```bash
+KUBECONFIG=/tmp/fooo kubectl config set-context env:test --cluster test-cluster --user config-sync
+```
+
+Set default context for a kubeconfig
+
+```bash
+KUBECONFIG=/tmp/fooo kubectl config use-context env:test 
+```
+
+Verify it works:
+
+```bash
+KUBECONFIG=/tmp/fooo kubectl get configmap
+```
