@@ -35,7 +35,7 @@ def handle_config_map_update(object, config, logger):
     name = object.metadata.name
     if name != config.config_map_name:
         return
-    new_files = object.data
+    new_files = {} if object.data is None else object.data
     old_files = glob.glob(config.output_dir + '/*')
     for file in new_files:
         logger.debug('Considering new file: %s', file)
