@@ -45,10 +45,8 @@ def handle_config_map_update(object, config, logger):
             logger.debug('File %s unchanged', file)
             continue
         (fd, tmp_file) = tempfile.mkstemp(dir=config.output_dir)
-
-        os.umask(0) # Default python ha umask not setting group and other permissions
-        with open(os.open('filepath', os.O_CREAT | os.O_WRONLY, 0o644), 'w') as fh:
-          fh.write(new_files[file])
+        with os.fdopen(os.open(fd, os.O_WRONLY | os.O_CREAT, 0o644), 'w') as f:
+          f.write(new_files[file])
         os.rename(tmp_file, path)
         logger.info('Updated file %s', path)
     for old_path in old_files:
