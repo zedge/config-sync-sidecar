@@ -2,7 +2,7 @@ import logging
 import glob
 import os
 import sys
-import tempfile
+import uuid
 import kubernetes
 from kubernetes.client.models.v1_config_map import V1ConfigMap
 
@@ -44,9 +44,11 @@ def handle_config_map_update(object, config, logger):
             # existing file, no changes
             logger.debug('File %s unchanged', file)
             continue
-        (fd, tmp_file) = tempfile.mkstemp(dir=config.output_dir)
-        with os.fdopen(os.open(fd, os.O_WRONLY | os.O_CREAT, 0o644), 'w') as f:
-          f.write(new_files[file])
+
+        open_flags = os.O_WRONLY | os.O_CREAT | os.O_EXCL
+        tmp_file = "{}/tmp{}".format(config.output_dir, str(uuid.uuid4()))
+        with os.fdopen(os.open(tmp_file, open_flags, 0o644), 'w') as fh:
+          fh.write(new_files[file])
         os.rename(tmp_file, path)
         logger.info('Updated file %s', path)
     for old_path in old_files:
