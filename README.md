@@ -145,7 +145,8 @@ KUBECONFIG=/tmp/fooo kubectl config set-cluster --server https://35.192.74.79 --
 Set credentials for user config-sync
 
 ```bash
-KUBECONFIG=/tmp/fooo kubectl config set-credentials config-sync --token $(kubectl get secret config-sync-sidecar-token-4mr94 -o json | jq -r '.data["token"]' | base64 -d)
+KUBECONFIG=/tmp/fooo kubectl config set-credentials config-sync --token="$(kubectl get secret config-sync-sidecar-token-4mr94 -o json | jq -r '.data["token"]' | base64 -d)" --kubeconfig /tmp/fooo
+# Unsure why, but as of 20180924 the --kubeconfig flag was required even tho the KUBECONFIG env is set... if not it would put the credentials in ~/.kube/config instead!
 ```
 
 Name a context, ie env:test with the above configuration
