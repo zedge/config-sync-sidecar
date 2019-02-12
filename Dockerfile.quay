@@ -1,0 +1,17 @@
+FROM golang:1.11 AS build
+
+WORKDIR /go/src/github.com/zedge/config-sync-sidecar
+RUN mkdir -p /usr/local/kubebuilder
+RUN curl -sL https://github.com/kubernetes-sigs/kubebuilder/releases/download/v1.0.7/kubebuilder_1.0.7_linux_amd64.tar.gz \
+    | tar -C /usr/local/kubebuilder --strip-components 1 -xvzf -
+COPY Gopkg.* Makefile ./
+COPY pkg pkg
+COPY cmd cmd
+COPY vendor vendor
+RUN pwd; ls -l; ls -l pkg cmd
+RUN KUBEBUILDER_CONTROLPLANE_START_TIMEOUT=60s CGO_ENABLED=0 PATH=/usr/local/kubebuilder/bin:$PATH \
+    make test configsync
+
+FROM alpine:3.8
+COPY --from=build /go/src/github.com/zedge/config-sync-sidecar/bin/configsync /configsync
+ENTRYPOINT ["/configsync"]

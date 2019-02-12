@@ -20,7 +20,7 @@ import (
 	"flag"
 	"os"
 
-	"gitlab.com/zedge/config-sync-sidecar/pkg/controller/configsync"
+	"github.com/zedge/config-sync-sidecar/pkg/controller/configsync"
 	_ "k8s.io/client-go/plugin/pkg/client/auth/gcp"
 	"sigs.k8s.io/controller-runtime/pkg/client/config"
 	"sigs.k8s.io/controller-runtime/pkg/manager"
